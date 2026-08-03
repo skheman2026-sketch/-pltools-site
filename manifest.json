@@ -1,0 +1,18 @@
+{
+ "schema_version": 1,
+ "dataset_id": "pltools-daily-top50",
+ "generated_at": "2026-08-03 17:08:22",
+ "as_of_date": "2026-08-03",
+ "source_commit": null,
+ "status": "ok",
+ "market_count": 50,
+ "min_client_schema": 1,
+ "files": [
+  {
+   "path": "snapshots/2026-08-03.json",
+   "sha256": "4efe817ed26b04043bf37ff47568b7cc521935ee407db9ec4f4d013cecbe7936",
+   "bytes": 100045
+  }
+ ],
+ "disclaimer_version": "v1"
+}

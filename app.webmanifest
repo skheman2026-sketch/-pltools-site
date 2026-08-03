@@ -1,0 +1,11 @@
+{
+  "name": "验盘师 · Polymarket 决议风险日报",
+  "short_name": "验盘师",
+  "description": "Polymarket 决议风险审计：每日 TOP50 待审盘面，证据可对质。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101318",
+  "theme_color": "#101318",
+  "icons": []
+}
