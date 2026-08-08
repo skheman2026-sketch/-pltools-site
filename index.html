@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>验盘师 · Polymarket 决议风险日报</title>
-<meta name="description" content="Polymarket 决议风险审计：每日 TOP50 待审盘面，证据可对质。">
+<meta name="description" content="Polymarket resolution-risk audits: top-50 markets scored daily, every score shows its evidence. 中英双语。">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101318">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -52,18 +52,20 @@ th{color:var(--sub);font-weight:500;white-space:nowrap}
 .ruletext{white-space:pre-wrap;word-break:break-word;background:var(--chip);border-radius:8px;
  padding:8px 10px;margin-top:8px;font-size:13px;color:var(--sub);max-height:260px;overflow:auto}
 .cases a{color:var(--accent);word-break:break-all}
+#lang{float:right;font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--sub);cursor:pointer}
 footer{max-width:720px;margin:18px auto 0;color:var(--sub);font-size:12px;line-height:1.7}
 .skeleton{color:var(--sub);text-align:center;padding:40px 0}
 </style>
 </head>
 <body>
 <header>
-  <h1>验盘师 <span style="font-weight:400;font-size:14px">· Polymarket 决议风险日报</span></h1>
-  <div class="sub" id="dateline">加载中…</div>
+  <h1><span id="brand">验盘师</span> <span style="font-weight:400;font-size:14px" id="tagline">· Polymarket 决议风险日报</span>
+    <button id="lang" type="button">EN</button></h1>
+  <div class="sub" id="dateline">…</div>
 </header>
 <div class="banner" id="banner"></div>
 <nav id="filters"></nav>
-<main id="list"><div class="skeleton">正在拉取今日盘面…</div></main>
+<main id="list"><div class="skeleton">…</div></main>
 <footer id="foot"></footer>
 <script>
 "use strict";
@@ -71,6 +73,49 @@ footer{max-width:720px;margin:18px auto 0;color:var(--sub);font-size:12px;line-h
 const $ = (t, cls, txt) => { const e = document.createElement(t); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
 const LS_KEY = "pltools-last-good-v1";
 let FILTER = "all";
+/* 语言层：数据串中英同串，以 " ‖ " 分隔（左中右英）；界面文案走 T 表。默认按浏览器语言。 */
+const SEP = " ‖ ";
+const T = {
+  zh: { brand: "验盘师", tagline: "· Polymarket 决议风险日报", loading: "正在拉取今日盘面…",
+        markets: "盘", generatedAt: "生成于", noAudit: "无初评", frozen: "🧊 冻结中 · 规则变更复核中",
+        final: "终评", pre: "初评", coverage: "覆盖", weight: "/100 权重 · 待人工终评", pending: "待评",
+        cclRed: "红 · CCL 硬规则", bands: { green: "绿 · 低风险", yellow: "黄 · 中风险", red: "红 · 高风险" },
+        volume: "成交量", deadline: "截止", top10: "前十持仓", expand: "展开证据面板",
+        thDim: "项", thScore: "分", thNote: "说明", weightWord: "权重", toHuman: "待人工",
+        noDims: "本盘暂无初评数据。", casesTitle: "已验真判例：", source: "来源",
+        ruleCap: "规则原文（第三方不可信文本，仅供核对）：", empty: "该筛选下没有盘面。",
+        staleBanner: "⚠️ 数据未更新：正在显示上一次校验通过的版本（网络或内容校验失败）。",
+        statusBanner: "⚠️ 数据源标记为 ", freshness: "，请注意新鲜度。",
+        footNote: " ｜ 评分口径 ", footTail: " ｜ 初评=机器只评客观项，终评=人工把关。",
+        filters: { all: "全部", frozen: "🧊 冻结", flags: "硬旗标", disputed: "争议史" },
+        flagNames: { ccl_red: "CCL 红线", disclosure_delay: "披露延迟源", other: "复杂盘" },
+        ruleChanges: "规则变更 ×", disputeHist: "UMA 争议史", stale: "数据偏旧", loadFail: "加载失败：" },
+  en: { brand: "pltools", tagline: "· Polymarket resolution-risk daily", loading: "Loading today's markets…",
+        markets: "markets", generatedAt: "built", noAudit: "not scored", frozen: "🧊 frozen · rule change under review",
+        final: "final", pre: "machine", coverage: "covers", weight: "/100 weight · human review pending", pending: "pending",
+        cclRed: "red · CCL hard rule", bands: { green: "green · low risk", yellow: "yellow · medium risk", red: "red · high risk" },
+        volume: "volume", deadline: "ends", top10: "top-10 holders", expand: "Show the evidence",
+        thDim: "Item", thScore: "Score", thNote: "Why", weightWord: "weight", toHuman: "human review",
+        noDims: "No scoring data for this market yet.", casesTitle: "Verified precedents:", source: "source",
+        ruleCap: "Rule text (third-party source, shown verbatim as plain text):", empty: "No markets under this filter.",
+        staleBanner: "⚠️ Not updated: showing the last version that passed verification (network or checksum failure).",
+        statusBanner: "⚠️ Data source flagged as ", freshness: " — check freshness.",
+        footNote: " ｜ rubric ", footTail: " ｜ machine score = objective items only; final score = human review.",
+        filters: { all: "All", frozen: "🧊 Frozen", flags: "Hard flags", disputed: "Disputed" },
+        flagNames: { ccl_red: "CCL red line", disclosure_delay: "lagging source", other: "multi-outcome" },
+        ruleChanges: "rule changes ×", disputeHist: "UMA dispute history", stale: "stale data", loadFail: "Load failed: " },
+};
+let LANG = (() => {
+  try { const v = localStorage.getItem("pltools-lang"); if (v === "zh" || v === "en") return v; } catch (_) {}
+  return (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+})();
+const t = () => T[LANG];
+/* 数据串取当前语言的一半；无分隔符则原样返回（旧快照兼容）。 */
+function pick(str) {
+  if (typeof str !== "string" || !str.includes(SEP)) return str || "";
+  const parts = str.split(SEP);
+  return LANG === "zh" ? parts[0] : parts[1];
+}
 
 async function sha256hex(buf) {
   const d = await crypto.subtle.digest("SHA-256", buf);
@@ -102,16 +147,14 @@ function lastGood() {
 
 function bandChip(m) {
   const a = m.audit;
-  if (!a) return $("span", "chip", "无初评");
-  if (a.status === "frozen") return $("span", "chip frozen", "🧊 冻结中 · 规则变更复核中");
-  if (a.status === "final" && a.risk_band) {
-    const label = { green: "绿 · 低风险", yellow: "黄 · 中风险", red: "红 · 高风险" }[a.risk_band];
-    return $("span", "chip " + a.risk_band, `终评 ${a.final_score} ｜ ${label}`);
-  }
-  if (a.risk_band === "red") return $("span", "chip red", "红 · CCL 硬规则");
+  if (!a) return $("span", "chip", t().noAudit);
+  if (a.status === "frozen") return $("span", "chip frozen", t().frozen);
+  if (a.status === "final" && a.risk_band)
+    return $("span", "chip " + a.risk_band, `${t().final} ${a.final_score} ｜ ${t().bands[a.risk_band]}`);
+  if (a.risk_band === "red") return $("span", "chip red", t().cclRed);
   if (a.machine_score != null)
-    return $("span", "chip", `初评 ${a.machine_score} ｜ 覆盖 ${a.covered_weight}/100 权重 · 待人工终评`);
-  return $("span", "chip", "待评");
+    return $("span", "chip", `${t().pre} ${a.machine_score} ｜ ${t().coverage} ${a.covered_weight}${t().weight}`);
+  return $("span", "chip", t().pending);
 }
 
 function fmtVol(v) {
@@ -133,70 +176,79 @@ function matchFilter(m) {
 function render(data) {
   const { manifest, payload, fromCache } = data;
   document.getElementById("dateline").textContent =
-    `${payload.as_of_date} ｜ ${payload.market_count} 盘 ｜ 生成于 ${payload.generated_at} UTC`;
+    `${payload.as_of_date} ｜ ${payload.market_count} ${t().markets} ｜ ${t().generatedAt} ${payload.generated_at} UTC`;
   const banner = document.getElementById("banner");
   banner.className = "banner"; banner.textContent = "";
-  if (fromCache) { banner.className = "banner bad"; banner.textContent = "⚠️ 数据未更新：正在显示上一次校验通过的版本（网络或内容校验失败）。"; }
-  else if (manifest.status !== "ok") { banner.className = "banner warn"; banner.textContent = "⚠️ 数据源标记为 " + manifest.status + "，请注意新鲜度。"; }
+  if (fromCache) { banner.className = "banner bad"; banner.textContent = t().staleBanner; }
+  else if (manifest.status !== "ok") { banner.className = "banner warn"; banner.textContent = t().statusBanner + manifest.status + t().freshness; }
 
   const list = document.getElementById("list");
   list.textContent = "";
   const ms = (payload.markets || []).filter(matchFilter);
-  if (!ms.length) list.append($("div", "skeleton", "该筛选下没有盘面。"));
+  if (!ms.length) list.append($("div", "skeleton", t().empty));
   for (const m of ms) {
     const card = $("article", "card");
     const r1 = $("div", "row1");
-    r1.append($("div", "q", m.question || "(无标题)"), $("div", "rank", "#" + (m.rank_by_volume ?? "—")));
+    r1.append($("div", "q", m.question || "(untitled)"), $("div", "rank", "#" + (m.rank_by_volume ?? "—")));
     card.append(r1);
     const chips = $("div", "chips");
     chips.append(bandChip(m));
     const a = m.audit || {};
     for (const [k, v] of Object.entries(a.hard_flags || {})) {
-      chips.append($("span", "chip red", k === "ccl_red" ? "CCL 红线" : k === "disclosure_delay" ? "披露延迟源" : "复杂盘"));
+      chips.append($("span", "chip red", t().flagNames[k] || t().flagNames.other));
     }
-    if ((m.rule_changes || []).length) chips.append($("span", "chip", `规则变更 ×${m.rule_changes.length}`));
-    if ((m.disputes || []).some(d => d.was_disputed)) chips.append($("span", "chip yellow", "UMA 争议史"));
-    if (m.data_freshness && m.data_freshness.is_stale) chips.append($("span", "chip yellow", "数据偏旧"));
+    if ((m.rule_changes || []).length) chips.append($("span", "chip", t().ruleChanges + m.rule_changes.length));
+    if ((m.disputes || []).some(d => d.was_disputed)) chips.append($("span", "chip yellow", t().disputeHist));
+    if (m.data_freshness && m.data_freshness.is_stale) chips.append($("span", "chip yellow", t().stale));
     card.append(chips);
     const meta = $("div", "meta");
-    meta.append($("span", null, "成交量 " + fmtVol(m.volume_usd)), $("span", null, "截止 " + (m.end_date || "—")));
+    meta.append($("span", null, t().volume + " " + fmtVol(m.volume_usd)),
+                $("span", null, t().deadline + " " + (m.end_date || "—")));
     if (m.concentration && m.concentration.top10_share != null)
-      meta.append($("span", null, "前十持仓 " + Math.round(m.concentration.top10_share * 100) + "%"));
+      meta.append($("span", null, t().top10 + " " + Math.round(m.concentration.top10_share * 100) + "%"));
     card.append(meta);
     card.append(details(m));
     list.append(card);
   }
+  const disc = LANG === "en" ? (payload.disclaimer_en || payload.disclaimer || "") : (payload.disclaimer || "");
   document.getElementById("foot").textContent =
-    (payload.disclaimer || "") + " ｜ 评分口径 " + (ms[0]?.audit?.rubric_version || "A-v1.1") +
-    " ｜ 初评=机器只评客观项，终评=人工把关（F3.1）。";
+    disc + t().footNote + (ms[0]?.audit?.rubric_version || "A-v1.1") + t().footTail;
+  document.getElementById("brand").textContent = t().brand;
+  document.getElementById("tagline").textContent = t().tagline;
+  document.getElementById("lang").textContent = LANG === "zh" ? "EN" : "中文";
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
 }
 
 function details(m) {
+  const tr_ = t();
   const d = $("details");
-  d.append($("summary", null, "展开证据面板"));
+  d.append($("summary", null, tr_.expand));
   const a = m.audit;
   if (a && a.dimension_scores) {
     const t = $("table");
-    const hr = $("tr"); ["项", "分", "说明"].forEach(h => hr.append($("th", null, h))); t.append(hr);
+    const hr = $("tr"); [tr_.thDim, tr_.thScore, tr_.thNote].forEach(h => hr.append($("th", null, h)));
+    t.append(hr);
     const keys = Object.keys(a.dimension_scores).sort((x, y) => parseInt(x.slice(1)) - parseInt(y.slice(1)));
     for (const k of keys) {
       const dim = a.dimension_scores[k];
       const tr = $("tr");
-      tr.append($("td", null, `${k}（权重${dim.weight}）`));
-      tr.append($("td", null, dim.score == null ? "待人工" : String(dim.score)));
-      tr.append($("td", "dimnote", dim.note || ""));
+      tr.append($("td", null, `${k} (${tr_.weightWord} ${dim.weight})`));
+      tr.append($("td", null, dim.score == null ? tr_.toHuman : String(dim.score)));
+      const note = $("td", "dimnote", pick(dim.note));
+      if (dim.evidence) { const ev = $("div", "dimnote"); ev.textContent = "› " + dim.evidence; note.append(ev); }
+      tr.append(note);
       t.append(tr);
     }
     d.append(t);
-  } else d.append($("div", "dimnote", "本盘暂无初评数据。"));
+  } else d.append($("div", "dimnote", tr_.noDims));
   if ((m.verified_cases || []).length) {
     const c = $("div", "cases");
-    c.append($("div", "dimnote", "已验真判例："));
+    c.append($("div", "dimnote", tr_.casesTitle));
     for (const vc of m.verified_cases) {
       const p = $("div");
       p.append($("span", null, "· " + vc.title + " "));
       if (typeof vc.source_url === "string" && vc.source_url.startsWith("https://")) {
-        const link = $("a", null, "来源"); link.href = vc.source_url; link.rel = "noopener nofollow"; link.target = "_blank";
+        const link = $("a", null, tr_.source); link.href = vc.source_url; link.rel = "noopener nofollow"; link.target = "_blank";
         p.append(link);
       }
       c.append(p);
@@ -205,15 +257,16 @@ function details(m) {
   }
   if (m.raw_rule_text) {
     const rt = $("div", "ruletext"); rt.textContent = m.raw_rule_text;  // 纯文本渲染，B9
-    const cap = $("div", "dimnote"); cap.textContent = "规则原文（第三方不可信文本，仅供核对）：";
+    const cap = $("div", "dimnote"); cap.textContent = tr_.ruleCap;
     d.append(cap, rt);
   }
   return d;
 }
 
 function buildFilters() {
-  const defs = [["all", "全部"], ["frozen", "🧊 冻结"], ["flags", "硬旗标"], ["disputed", "争议史"]];
+  const defs = Object.entries(t().filters);
   const nav = document.getElementById("filters");
+  nav.textContent = "";
   for (const [key, label] of defs) {
     const b = $("button", key === FILTER ? "on" : "", label);
     b.onclick = () => { FILTER = key; [...nav.children].forEach(x => x.classList.remove("on")); b.classList.add("on"); if (window.__data) render(window.__data); };
@@ -223,12 +276,20 @@ function buildFilters() {
 
 (async () => {
   buildFilters();
+  document.getElementById("lang").onclick = () => {
+    LANG = LANG === "zh" ? "en" : "zh";
+    try { localStorage.setItem("pltools-lang", LANG); } catch (_) {}
+    buildFilters();
+    if (window.__data) render(window.__data);
+  };
+  document.getElementById("list").textContent = "";
+  document.getElementById("list").append($("div", "skeleton", t().loading));
   try {
     window.__data = await loadData();
   } catch (e) {
     const cached = lastGood();
     if (cached) window.__data = cached;
-    else { document.getElementById("list").textContent = ""; document.getElementById("list").append($("div", "skeleton", "加载失败：" + e.message)); return; }
+    else { document.getElementById("list").textContent = ""; document.getElementById("list").append($("div", "skeleton", t().loadFail + e.message)); return; }
   }
   render(window.__data);
   if ("serviceWorker" in navigator && location.protocol === "https:")
