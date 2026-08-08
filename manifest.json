@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "dataset_id": "pltools-daily-top50",
- "generated_at": "2026-08-08 01:19:28",
+ "generated_at": "2026-08-08 06:08:34",
  "as_of_date": "2026-08-08",
  "source_commit": null,
  "status": "ok",
@@ -10,8 +10,8 @@
  "files": [
   {
    "path": "snapshots/2026-08-08.json",
-   "sha256": "b281cca6875e5986bdf5165800aece11c750526c1ea69bb6f67d561befa0fec2",
-   "bytes": 164721
+   "sha256": "9eb52a35e70b7c95b05ddbbab83ad6b566fd090a59983f048e9b057cbd874b82",
+   "bytes": 171861
   }
  ],
  "disclaimer_version": "v1"
