@@ -87,6 +87,7 @@ const T = {
         staleBanner: "⚠️ 数据未更新：正在显示上一次校验通过的版本（网络或内容校验失败）。",
         statusBanner: "⚠️ 数据源标记为 ", freshness: "，请注意新鲜度。",
         footNote: " ｜ 评分口径 ", footTail: " ｜ 初评=机器只评客观项，终评=人工把关。",
+        ctaLead: "有哪个盘的结算文本让你不放心？→ ", ctaLink: "提交求审（Telegram）",
         filters: { all: "全部", frozen: "🧊 冻结", flags: "硬旗标", disputed: "争议史" },
         flagNames: { ccl_red: "CCL 红线", disclosure_delay: "披露延迟源", other: "复杂盘" },
         ruleChanges: "规则变更 ×", disputeHist: "UMA 争议史", stale: "数据偏旧", loadFail: "加载失败：" },
@@ -101,6 +102,7 @@ const T = {
         staleBanner: "⚠️ Not updated: showing the last version that passed verification (network or checksum failure).",
         statusBanner: "⚠️ Data source flagged as ", freshness: " — check freshness.",
         footNote: " ｜ rubric ", footTail: " ｜ machine score = objective items only; final score = human review.",
+        ctaLead: "Got a market whose resolution text bothers you? → ", ctaLink: "request an audit (Telegram)",
         filters: { all: "All", frozen: "🧊 Frozen", flags: "Hard flags", disputed: "Disputed" },
         flagNames: { ccl_red: "CCL red line", disclosure_delay: "lagging source", other: "multi-outcome" },
         ruleChanges: "rule changes ×", disputeHist: "UMA dispute history", stale: "stale data", loadFail: "Load failed: " },
@@ -211,8 +213,17 @@ function render(data) {
     list.append(card);
   }
   const disc = LANG === "en" ? (payload.disclaimer_en || payload.disclaimer || "") : (payload.disclaimer || "");
-  document.getElementById("foot").textContent =
+  const foot = document.getElementById("foot");
+  foot.textContent =
     disc + t().footNote + (ms[0]?.audit?.rubric_version || "A-v1.1") + t().footTail;
+  /* 求审入口（2026-08-14 主编批）：固定链接非数据字符串，B9 不适用；仍走 DOM 拼装。 */
+  const cta = $("div");
+  cta.append(document.createTextNode(t().ctaLead));
+  const ctaLink = $("a", "", t().ctaLink);
+  ctaLink.href = "https://t.me/pltools_audit_bot?start=site";
+  ctaLink.rel = "noopener";
+  cta.append(ctaLink);
+  foot.append(cta);
   document.getElementById("brand").textContent = t().brand;
   document.getElementById("tagline").textContent = t().tagline;
   document.getElementById("lang").textContent = LANG === "zh" ? "EN" : "中文";
