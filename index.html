@@ -11,6 +11,8 @@
 <meta name="apple-mobile-web-app-title" content="验盘师">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <style>
 :root{color-scheme:light dark;
  --bg:#f6f7f9;--card:#ffffff;--ink:#1c2330;--sub:#5b6472;--line:#e4e8ee;
@@ -27,6 +29,12 @@ h1{font-size:20px;letter-spacing:.5px}
 .banner{max-width:720px;margin:0 auto 10px;padding:9px 12px;border-radius:10px;font-size:13px;display:none}
 .banner.warn{display:block;background:color-mix(in srgb,var(--yellow) 14%,var(--card));border:1px solid var(--yellow)}
 .banner.bad{display:block;background:color-mix(in srgb,var(--red) 12%,var(--card));border:1px solid var(--red)}
+.installbar{max-width:720px;margin:0 auto 10px;padding:9px 12px;border-radius:10px;font-size:13px;background:var(--card);border:1px solid var(--line);display:none;align-items:center;gap:10px}
+.installbar.show{display:flex}
+.installbar .installtext{flex:1}
+.installbar button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+ padding:5px 12px;font-size:13px;cursor:pointer}
+.installbar .installclose{padding:5px 9px}
 nav{max-width:720px;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap}
 nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
  padding:5px 12px;font-size:13px;cursor:pointer}
@@ -64,15 +72,17 @@ footer{max-width:720px;margin:18px auto 0;color:var(--sub);font-size:12px;line-h
   <div class="sub" id="dateline">…</div>
 </header>
 <div class="banner" id="banner"></div>
+<div class="installbar" id="install"></div>
 <nav id="filters"></nav>
 <main id="list"><div class="skeleton">…</div></main>
 <footer id="foot"></footer>
 <script>
 "use strict";
-/* 铁律：所有来自数据的字符串一律 textContent 渲染（B9：规则文本是不可信输入，禁 innerHTML）。*/
+/* 铁律：所有来自数据的字符串一律 textContent 渲染（B9：规则文本是不可信输入，禁 HTML 字符串注入）。*/
 const $ = (t, cls, txt) => { const e = document.createElement(t); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
 const LS_KEY = "pltools-last-good-v1";
 let FILTER = "all";
+let DEFERRED = null;
 /* 语言层：数据串中英同串，以 " ‖ " 分隔（左中右英）；界面文案走 T 表。默认按浏览器语言。 */
 const SEP = " ‖ ";
 const T = {
@@ -88,6 +98,8 @@ const T = {
         statusBanner: "⚠️ 数据源标记为 ", freshness: "，请注意新鲜度。",
         footNote: " ｜ 评分口径 ", footTail: " ｜ 初评=机器只评客观项，终评=人工把关。",
         ctaLead: "有哪个盘的结算文本让你不放心？→ ", ctaLink: "提交求审（Telegram）",
+        installLead: "📲 可以装成 App，放主屏一点就开。", installBtn: "装到主屏",
+        installIOS: "📲 装到主屏：点下方 ⬆️ 分享 →「添加到主屏幕」", installClose: "关闭提示",
         filters: { all: "全部", frozen: "🧊 冻结", flags: "硬旗标", disputed: "争议史" },
         flagNames: { ccl_red: "CCL 红线", disclosure_delay: "披露延迟源", other: "复杂盘" },
         ruleChanges: "规则变更 ×", disputeHist: "UMA 争议史", stale: "数据偏旧", loadFail: "加载失败：" },
@@ -103,6 +115,8 @@ const T = {
         statusBanner: "⚠️ Data source flagged as ", freshness: " — check freshness.",
         footNote: " ｜ rubric ", footTail: " ｜ machine score = objective items only; final score = human review.",
         ctaLead: "Got a market whose resolution text bothers you? → ", ctaLink: "request an audit (Telegram)",
+        installLead: "📲 Install this as an app — one tap from your home screen.", installBtn: "Install",
+        installIOS: "📲 Add to Home Screen: tap ⬆️ below, then \"Add to Home Screen\".", installClose: "Dismiss",
         filters: { all: "All", frozen: "🧊 Frozen", flags: "Hard flags", disputed: "Disputed" },
         flagNames: { ccl_red: "CCL red line", disclosure_delay: "lagging source", other: "multi-outcome" },
         ruleChanges: "rule changes ×", disputeHist: "UMA dispute history", stale: "stale data", loadFail: "Load failed: " },
@@ -285,6 +299,47 @@ function buildFilters() {
   }
 }
 
+function renderInstallBar() {
+  const bar = document.getElementById("install");
+  bar.className = "installbar";
+  bar.textContent = "";
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (standalone) return;
+  try { if (localStorage.getItem("pltools-install-dismissed") === "1") return; } catch (_) {}
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (!isIOS && !DEFERRED) return;
+  bar.append($("span", "installtext", isIOS ? t().installIOS : t().installLead));
+  if (!isIOS) {
+    const install = $("button", "", t().installBtn);
+    install.type = "button";
+    install.onclick = () => {
+      if (!DEFERRED) return;
+      DEFERRED.prompt();
+      DEFERRED = null;
+      bar.className = "installbar";
+      bar.textContent = "";
+    };
+    bar.append(install);
+  }
+  const close = $("button", "installclose", "×");
+  close.type = "button";
+  close.setAttribute("aria-label", t().installClose);
+  close.onclick = () => {
+    bar.className = "installbar";
+    bar.textContent = "";
+    try { localStorage.setItem("pltools-install-dismissed", "1"); } catch (_) {}
+  };
+  bar.append(close);
+  bar.className = "installbar show";
+}
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  DEFERRED = e;
+  renderInstallBar();
+});
+
 (async () => {
   buildFilters();
   document.getElementById("lang").onclick = () => {
@@ -292,6 +347,7 @@ function buildFilters() {
     try { localStorage.setItem("pltools-lang", LANG); } catch (_) {}
     buildFilters();
     if (window.__data) render(window.__data);
+    renderInstallBar();
   };
   document.getElementById("list").textContent = "";
   document.getElementById("list").append($("div", "skeleton", t().loading));
@@ -303,6 +359,7 @@ function buildFilters() {
     else { document.getElementById("list").textContent = ""; document.getElementById("list").append($("div", "skeleton", t().loadFail + e.message)); return; }
   }
   render(window.__data);
+  renderInstallBar();
   if ("serviceWorker" in navigator && location.protocol === "https:")
     navigator.serviceWorker.register("sw.js").catch(() => {});
 })();

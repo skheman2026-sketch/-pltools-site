@@ -1,9 +1,9 @@
 /* 验盘师 PWA Service Worker v1：壳 cache-first，数据 network-first（失败回缓存）。
    注意：数据完整性由页面层 sha256 校验（manifest 清单），SW 只管可用性。*/
 "use strict";
-const SHELL = "pltools-shell-v1";
+const SHELL = "pltools-shell-v2";
 const DATA = "pltools-data-v1";
-const SHELL_FILES = ["./", "./index.html", "./app.webmanifest"];
+const SHELL_FILES = ["./", "./index.html", "./app.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-512-maskable.png", "./apple-touch-icon.png", "./favicon-32.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(SHELL_FILES)));
