@@ -1,17 +1,17 @@
 {
  "schema_version": 1,
  "dataset_id": "pltools-daily-top50",
- "generated_at": "2026-09-20 01:19:11",
- "as_of_date": "2026-09-20",
+ "generated_at": "2026-09-21 01:19:11",
+ "as_of_date": "2026-09-21",
  "source_commit": null,
  "status": "ok",
  "market_count": 50,
  "min_client_schema": 1,
  "files": [
   {
-   "path": "snapshots/2026-09-20.json",
-   "sha256": "3f74b0768273082614f6426ee62e46cd9e59538459b345914022b1f734a9592d",
-   "bytes": 202818
+   "path": "snapshots/2026-09-21.json",
+   "sha256": "4a490914a9df06568f89cd4d6f7154611beca3f3db9244b1b9f43d2f49cff092",
+   "bytes": 202816
   }
  ],
  "disclaimer_version": "v1"
